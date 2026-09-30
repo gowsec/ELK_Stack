@@ -1,0 +1,29 @@
+graph TD
+    User(("Client / Script quét<br/>curl"))
+    Admin(("Quản trị viên<br/>(Nhóm)"))
+
+    subgraph VM ["Máy ảo Linux (3GB RAM)"]
+        direction TB
+
+        Nginx[" Nginx Web Server<br/>:80"]
+        LogFile>"/var/log/nginx/access.log<br/>(1 dòng text / request)"]
+        Filebeat[" Filebeat<br/>(Nginx Module)"]
+        Registry[("Registry<br/>(offset đã đọc)")]
+
+        subgraph ES [" Elasticsearch :9200 (Heap 1GB)"]
+            Ingest[" Ingest Pipeline<br/>Grok → JSON fields"]
+            Index[("Index filebeat-*<br/>Inverted Index")]
+        end
+
+        Kibana[" Kibana :5601<br/>Dashboard / Discover"]
+
+        Nginx -- "1. Ghi log thô (append)" --> LogFile
+        LogFile -- "2. Đọc dòng mới" --> Filebeat
+        Filebeat <-- "3. Lưu / đọc offset<br/>(cập nhật sau khi ES ACK)" --> Registry
+        Filebeat -- "4. Gửi log thô<br/>+ tên pipeline" --> Ingest
+        Ingest -- "5. Document JSON<br/>(source.ip, status_code, url)" --> Index
+        Kibana <-- "6. Truy vấn / kết quả" --> Index
+    end
+
+    User -- "HTTP 200 / 404 / 500" --> Nginx
+    Admin -- "Xem biểu đồ,<br/>phân tích lỗi" --> Kibana
