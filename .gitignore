@@ -1,0 +1,5 @@
+*.ova
+*.vdi
+*.vmdk
+*.log
+.env
