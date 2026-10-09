@@ -1,0 +1,2 @@
+## Demo sự cố (Troubleshooting)
+> Dừng Elasticsearch trong 3 phút trong khi Web Server vẫn nhận traffic; bật lại Elasticsearch và kiểm tra cơ chế Registry của Filebeat để chứng minh dữ liệu log được gửi bù đầy đủ, không bị mất.
