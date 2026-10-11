@@ -61,15 +61,6 @@ graph TD
 ## Cấu trúc thư mục
 
 ```
-infra/     Cấu hình hạ tầng (Elasticsearch, Kibana, Filebeat, Nginx) và script vận hành
-traffic/   Script sinh traffic giả cho các demo
-demos/     4 demo: cách chạy, kết quả, bằng chứng
-docs/      Lý thuyết và quy ước nhóm
-report/    Báo cáo (LaTeX)
-slides/    Slide thuyết trình
-```
-
-```
 ELK-Stack/
 ├── docs/                              # Tài liệu và hướng dẫn đồ án
 │   ├── diagrams/                      # Sơ đồ kiến trúc hệ thống
