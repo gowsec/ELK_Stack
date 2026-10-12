@@ -1,0 +1,6 @@
+# Kibana 8.19.23 - Elasticsearch runs on the same Azure VM.
+# Access Kibana through an SSH tunnel; keep it bound to loopback.
+server.host: "127.0.0.1"
+server.port: 5601
+
+elasticsearch.hosts: ["http://localhost:9200"]
