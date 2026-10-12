@@ -3,3 +3,4 @@
 *.vmdk
 *.log
 .env
+.DS_Store
