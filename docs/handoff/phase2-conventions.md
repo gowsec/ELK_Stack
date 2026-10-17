@@ -24,7 +24,7 @@
 | **Attacker 2 (Top 2)** | IP giả lập `203.0.113.77`; 50 request; quét cường độ thấp; nghỉ 0,3 giây giữa các request |
 | **Danh sách URL bị quét** | `/admin`, `/.env`, `/wp-login.php`, `/phpmyadmin`, `/config.php`, `/backup.zip`, `/api/users`, `/scan-<random>` |
 | **Mã 500** | 30 request tới `/error`; IP ngẫu nhiên thuộc `192.0.2.1` đến `192.0.2.254`; nghỉ 0,5 giây giữa các request |
-| **Tỉ lệ 200 / 404 / 500** | Khoảng 33.55% (Mã 200) / 56.77% (Mã 404) / 6.68% (Mã 500) |
+| **Tỉ lệ 200 / 404 / 500** | Khoảng 33.55% (Mã 200) / 56.77% (Mã 404) / 9.68% (Mã 500) |
 | **Thời gian rải dữ liệu** | Chạy ngầm và hoàn thành trong thời gian ngắn (7 phút) |
 
 ---
