@@ -18,14 +18,14 @@
 
 | Thông tin cần có | Giá trị cụ thể |
 |---|---|
-| **Tổng số request** | ~ 310 request |
-| **IP khách thường** | Dải `198.51.100.x` (khoảng ~150 IP sinh ngẫu nhiên) |
-| **Attacker 1 (Top 1)** | IP `203.0.113.50` - Quét cường độ cao (80 lỗi 404) |
-| **Attacker 2 (Top 2)** | IP `203.0.113.77` - Quét cường độ thấp (50 lỗi 404) |
+| **Tổng số request** | 310 request |
+| **IP khách thường** | `198.51.100.1` đến `198.51.100.254`, chọn ngẫu nhiên cho mỗi request; tổng 150 request |
+| **Attacker 1 (Top 1)** | IP giả lập `203.0.113.50`; 80 request; quét cường độ cao; nghỉ 0,2 giây giữa các request |
+| **Attacker 2 (Top 2)** | IP giả lập `203.0.113.77`; 50 request; quét cường độ thấp; nghỉ 0,3 giây giữa các request |
 | **Danh sách URL bị quét** | `/admin`, `/.env`, `/wp-login.php`, `/phpmyadmin`, `/config.php`, `/backup.zip`, `/api/users`, `/scan-<random>` |
-| **Mã 500** | 30 request từ dải IP `192.0.2.x` truy cập vào URL `/error` |
-| **Tỉ lệ 200 / 404 / 500** | Khoảng 48% (Mã 200) / 42% (Mã 404) / 10% (Mã 500) |
-| **Thời gian rải dữ liệu** | Chạy ngầm và hoàn thành trong thời gian ngắn (khoảng 2.5 phút) |
+| **Mã 500** | 30 request tới `/error`; IP ngẫu nhiên thuộc `192.0.2.1` đến `192.0.2.254`; nghỉ 0,5 giây giữa các request |
+| **Tỉ lệ 200 / 404 / 500** | Khoảng 33.55% (Mã 200) / 56.77% (Mã 404) / 9.68% (Mã 500) |
+| **Thời gian rải dữ liệu** | Chạy ngầm và hoàn thành trong thời gian ngắn (7 phút) |
 
 ---
 
