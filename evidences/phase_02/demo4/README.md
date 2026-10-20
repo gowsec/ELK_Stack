@@ -1,6 +1,6 @@
-# Demo 4 — Minh chứng Kiểm thử Khả năng Chịu lỗi (Fault Tolerance)
+# Demo 4 – Minh chứng Kiểm thử Khả năng Chịu lỗi (Fault Tolerance) & Cơ chế Registry
 
-> **Kịch bản:** Dừng Elasticsearch trong khi Web Server Nginx vẫn nhận traffic; khởi động lại Elasticsearch và chứng minh cơ chế Registry / Retry của Filebeat giúp thu thập bù dữ liệu đầy đủ 100%, không bị mất bất kỳ bản ghi log nào.
+> **Kịch bản:** Dừng Elasticsearch trong 3 phút trong khi Web Server Nginx vẫn nhận traffic; khởi động lại Elasticsearch và kiểm tra cơ chế **Registry của Filebeat** để chứng minh dữ liệu log được gửi bù đầy đủ 100%, không bị mất bất kỳ bản ghi log nào.
 
 ---
 
@@ -27,6 +27,16 @@
 
 ![03_baseline_es_count](./03_baseline_es_count.png)
 
+* **Kiểm tra cơ chế Registry mốc ban đầu (T0 - Trước sự cố):**
+  * Lệnh thực hiện:
+    ```bash
+    sudo stat -c "Kích thước access.log: %s bytes" /var/log/nginx/access.log
+    sudo tail -n 3 /var/lib/filebeat/registry/filebeat/log.json
+    ```
+  * **Quan sát:** Kích thước file `access.log` là `0 bytes`. Trong Registry chưa có offset mới của `access.log` (trạng thái sạch đồng bộ với baseline).
+
+![03b_registry_baseline](./03b_registry_baseline.png)
+
 ---
 
 ## Bước 2. Giả lập sự cố Elasticsearch (Outage)
@@ -37,9 +47,9 @@
 
 ---
 
-## Bước 3. Bơm Traffic kiểm thử & Quan sát chịu lỗi
+## Bước 3. Bơm Traffic kiểm thử & Chứng minh Registry Đóng Băng
 
-* **Thao tác:** Chạy `outage_test.sh` bơm 50 request kiểm thử (`/outage-test-*`) trong khi Elasticsearch đang tắt.
+* **Thao tác:** Chạy `outage_test.sh` bơm 50 request kiểm thử (`/outage-test-*`) trong khi Elasticsearch đang tắt (kéo dài khoảng 3 phút).
 * **Video quá trình chạy script:** [`demo4_fault_tolerance.mp4`](./demo4_fault_tolerance.mp4)
 
 * Filebeat phát hiện mất kết nối (`connection refused`), lưu log vào hàng đợi và kích hoạt cơ chế `Exponential Backoff Retry`:
@@ -50,21 +60,49 @@
 
 ![06_nginx_logging_during_outage](./06_nginx_logging_during_outage.png)
 
+* **Kiểm tra cơ chế Registry trong sự cố (T1 - Trong lúc ES tắt):**
+  * Lệnh thực hiện:
+    ```bash
+    sudo stat -c "Kích thước access.log: %s bytes" /var/log/nginx/access.log
+    sudo tail -n 3 /var/lib/filebeat/registry/filebeat/log.json
+    ```
+  * **Quan sát:** Kích thước `access.log` đã phình to lên **`5318 bytes`** do ghi nhận thêm 50 requests mới. Tuy nhiên, vì Elasticsearch đang tắt không thể gửi ACK, Filebeat **hoàn toàn đóng băng Registry offset** (không có bản ghi offset 5318 nào được commit trong registry).
+
+![06b_registry_frozen_outage](./06b_registry_frozen_outage.png)
+
 ---
 
-## Bước 4. Khôi phục dịch vụ Elasticsearch (Recovery)
+## Bước 4. Khôi phục dịch vụ Elasticsearch & Bù dữ liệu (Recovery)
 
-* **Thao tác:** Bật lại Elasticsearch (`systemctl start elasticsearch`). Cụm phục hồi `active` và cluster health đạt `green`. Filebeat tự động đọc theo Registry offset và đẩy bù toàn bộ log tồn đọng.
+* **Thao tác:** Bật lại Elasticsearch (`systemctl start elasticsearch`). Cụm phục hồi `active` và cluster health đạt `green`.
 
 ![07_es_recovered_active](./07_es_recovered_active.png)
+
+* **Kiểm tra cơ chế Registry sau phục hồi (T2 - Sau khi ES bật lại):**
+  * Lệnh thực hiện:
+    ```bash
+    sudo stat -c "Kích thước access.log: %s bytes" /var/log/nginx/access.log
+    sudo tail -n 5 /var/lib/filebeat/registry/filebeat/log.json
+    ```
+  * **Quan sát:** Khi Elasticsearch hoạt động trở lại, Filebeat tự động đọc tiếp từ offset cũ, gửi bù toàn bộ các dòng log bị trễ, nhận ACK và cập nhật offset trong Registry **đuổi kịp chính xác kích thước file `5318 bytes`** (`"source":"/var/log/nginx/access.log", "offset":5318`).
+
+![07b_registry_recovered](./07b_registry_recovered.png)
 
 ---
 
 ## Bước 5. Đối chiếu Toàn vẹn Dữ liệu & Trực quan hóa (Reconciliation)
 
-* **Thao tác:** So sánh số log tại Nginx và số document tại Elasticsearch, sau đó kiểm tra trên Kibana Discover.
+### Bảng tổng hợp diễn biến Cơ chế Registry qua 3 thời điểm:
 
-* **Đối chiếu số lượng:** Số log Nginx = **50**, số doc Elasticsearch = **50** ($50 = 50$). Đạt tỷ lệ 50/50 (**Zero Data Loss** — At-least-once Delivery thành công 100%):
+| Thời điểm | Trạng thái ES | Hành động traffic | Kích thước `access.log` | Trạng thái Registry Offset | Đánh giá kỹ thuật |
+| :--- | :---: | :--- | :---: | :---: | :--- |
+| **T0: Trước sự cố** | Running | Baseline sạch | `0 bytes` | `0` (đồng bộ) | Hệ thống ở trạng thái baseline sạch. |
+| **T1: Trong sự cố (3 phút)** | **STOPPED** | Bơm 50 requests | `5318 bytes` | **Đứng yên (chưa commit 5318)** | ES không phản hồi ACK &rarr; Registry không dịch chuyển con trỏ. |
+| **T2: Sau phục hồi** | Running | Khôi phục cụm | `5318 bytes` | **Đuổi kịp (`5318 bytes`)** | Gửi bù toàn bộ 50 logs; Registry cập nhật bằng kích thước file. |
+
+---
+
+* **Đối chiếu số lượng:** Số log Nginx sinh ra = **50**, số document tăng thêm tại Elasticsearch = **50** ($50 = 50$). Đạt tỷ lệ 50/50 (**Zero Data Loss** – At-least-once Delivery thành công 100%):
 
 ![08_reconciliation_50_equals_50](./08_reconciliation_50_equals_50.png)
 
