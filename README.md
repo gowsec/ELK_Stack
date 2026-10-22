@@ -13,7 +13,7 @@ graph TD
     User(("Client / Script quét<br/>curl"))
     Admin(("Quản trị viên<br/>(Nhóm)"))
 
-    subgraph VM ["Máy ảo Linux (3GB RAM)"]
+    subgraph VM ["Máy ảo Linux (3,8GB RAM)"]
         direction TB
 
         Nginx[" Nginx Web Server<br/>:80"]
